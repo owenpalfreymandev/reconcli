@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import time
 import requests
 
@@ -6,7 +8,6 @@ from app.services.github_errors import (
     github_headers,
     raise_for_github_error,
 )
-
 
 GITHUB_API = "https://api.github.com"
 
@@ -29,6 +30,22 @@ def _get_auth_headers():
 def get_authenticated_user():
     response = requests.get(
         f"{GITHUB_API}/user",
+        headers=_get_auth_headers(),
+        timeout=10,
+    )
+
+    raise_for_github_error(response)
+
+    return response.json()
+
+
+def get_user(username: str):
+    """Return a GitHub user's public profile."""
+    if not username:
+        raise ValueError("username must not be empty")
+
+    response = requests.get(
+        f"{GITHUB_API}/users/{quote(username, safe='')}",
         headers=_get_auth_headers(),
         timeout=10,
     )
