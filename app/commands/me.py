@@ -12,3 +12,11 @@ def me():
 
     user = get_authenticated_user()
     display_user(user)
+
+@app.command()
+def scout(user: str):
+    """Scout another GitHub user."""
+    from app.services.github import get_user
+
+    profile = get_user(user)
+    display_user(profile)

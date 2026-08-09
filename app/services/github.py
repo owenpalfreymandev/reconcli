@@ -38,6 +38,19 @@ def get_authenticated_user():
     return response.json()
 
 
+def get_user(username: str):
+    """Return a GitHub user's public profile."""
+    response = requests.get(
+        f"{GITHUB_API}/users/{username}",
+        headers=_get_auth_headers(),
+        timeout=10,
+    )
+
+    raise_for_github_error(response)
+
+    return response.json()
+
+
 def get_user_repos():
     response = requests.get(
         f"{GITHUB_API}/user/repos",
