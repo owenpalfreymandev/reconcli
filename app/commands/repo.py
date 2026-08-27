@@ -92,7 +92,8 @@ def list():
 def details(
     owner: str = typer.Argument(..., help="Repository owner, e.g. owenpalfreymandev"),
     repo: str = typer.Argument(..., help="Repository name, e.g. reconcli"),
-    contributors: bool = typer.Option(False, help="View contributors in more detail.")
+    contributors: bool = typer.Option(False, help="View contributors in more detail."),
+    languages: bool = typer.Option(False, help="View language usage in more detail."),
 ):
     """Gain insights into your repo"""
     from app.services.github import (
@@ -104,6 +105,20 @@ def details(
     from app.ui.repo import display_view_header
 
     details = get_repo_details(owner, repo)
+    if contributors and languages:
+        raise typer.BadParameter(
+            "Choose either --contributors or --languages."
+        )
+
+    if languages:
+        from app.ui.repo import display_languages
+
+        display_languages(
+            details.get("full_name", f"{owner}/{repo}"),
+            get_languages(owner, repo),
+        )
+        return
+
     if contributors:
         from app.ui.repo import display_contributors
 
@@ -130,7 +145,7 @@ def details(
         )
         return
 
-    languages = get_languages(owner, repo)
+    language_data = get_languages(owner, repo)
     contributions = get_top_contributors(owner, repo, limit=5)
 
     display_view_header("Details", details.get("full_name", f"{owner}/{repo}"))
@@ -168,5 +183,5 @@ def details(
     typer.echo("Languages")
     typer.echo("---------")
 
-    for language in format_languages(languages):
+    for language in format_languages(language_data):
         typer.echo(language)

@@ -37,6 +37,24 @@ def format_size(size: int | None) -> str:
     return f"{value:.1f} {units[current_unit]}"
 
 
+def format_bytes(size: int | None) -> str:
+    """Format byte size values for display."""
+    if size is None:
+        return "Not available"
+
+    units = ["B", "KB", "MB", "GB", "TB"]
+    value = float(size)
+    current_unit = 0
+
+    while value >= 1000 and current_unit < len(units) - 1:
+        value /= 1000
+        current_unit += 1
+
+    if current_unit == 0:
+        return f"{int(value)} B"
+    return f"{value:.1f} {units[current_unit]}"
+
+
 def display_repo_details(
     details: dict,
     languages: list[str],
@@ -224,6 +242,46 @@ def display_contributors(
     ))
 
 
+def display_languages(full_name: str, languages: dict[str, int]) -> None:
+    """Display all languages reported by GitHub with proportional usage bars."""
+    display_view_header("Languages", full_name)
+
+    if not languages:
+        console.print(Text("No language data returned.", style="dim"))
+        return
+
+    total_bytes = sum(languages.values())
+    ranked_languages = sorted(
+        languages.items(),
+        key=lambda language: language[1],
+        reverse=True,
+    )
+    largest_count = ranked_languages[0][1]
+    language_count = len(ranked_languages)
+
+    console.print(Text(
+        f"{language_count} languages returned by GitHub · 100% of reported code",
+        style="dim",
+    ))
+    console.print()
+    console.print(Text("LANGUAGE BREAKDOWN", style="bold"))
+    console.print(Text("─" * 58, style="dim"))
+
+    for index, (language, byte_count) in enumerate(ranked_languages, start=1):
+        console.print(_language_row(
+            language,
+            byte_count,
+            total_bytes,
+            largest_count,
+            rank=index,
+        ))
+        if index < language_count:
+            console.print()
+
+    console.print(Text("─" * 58, style="dim"))
+    console.print(Text(f"Showing all {language_count} languages", style="dim"))
+
+
 def _contributor_row(
     contributor: dict,
     total_commits: int,
@@ -250,5 +308,34 @@ def _contributor_row(
     row.append(f"{commits:>6} {commit_label}\n")
     row.append(" " * (4 if rank is not None else 3))
     row.append(bar.ljust(bar_width), style=bar_style)
+    row.append(f"  {percentage:.1f}%", style="dim")
+    return row
+
+
+def _language_row(
+    language: str,
+    byte_count: int,
+    total_bytes: int,
+    largest_count: int,
+    rank: int | None = None,
+) -> Text:
+    """Build one compact language row with a proportional usage bar."""
+    percentage = byte_count / total_bytes * 100 if total_bytes else 0
+    bar_width = 32
+    filled = (
+        max(1, round(byte_count / largest_count * bar_width))
+        if byte_count and largest_count
+        else 0
+    )
+    bar = "█" * filled
+
+    row = Text()
+    if rank is not None:
+        row.append(f"{rank:<2} ", style="dim")
+    row.append("  ", style="dim")
+    row.append(f"{language:<30}")
+    row.append(f"{format_bytes(byte_count):>12}\n")
+    row.append(" " * (4 if rank is not None else 3))
+    row.append(bar.ljust(bar_width), style="green")
     row.append(f"  {percentage:.1f}%", style="dim")
     return row
