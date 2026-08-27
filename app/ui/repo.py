@@ -7,6 +7,22 @@ from rich.text import Text
 console = Console()
 
 
+def format_size(size: int | None) -> str:
+    # Format GitHub's repository size value for display.
+    if size is None:
+        return "Not available"
+
+    units = ["KB", "MB", "GB", "TB", "PB"]
+    value = size
+    current_unit = 0
+
+    while value >= 1000 and current_unit < len(units) - 1:
+        value /= 1000
+        current_unit += 1
+
+    return f"{value:.1f} {units[current_unit]}"
+
+
 def display_repo_details(
     details: dict,
     languages: list[str],
@@ -62,7 +78,7 @@ def display_repo_details(
     )
     stats.add_row(
         "Size",
-        details.get("formatted_size", "—"),
+        format_size(details.get("size")),
     )
 
     stats_panel = Panel(
