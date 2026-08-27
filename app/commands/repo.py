@@ -96,6 +96,11 @@ def details(
     languages: bool = typer.Option(False, help="View language usage in more detail."),
 ):
     """Gain insights into your repo"""
+    if contributors and languages:
+        raise typer.BadParameter(
+            "Choose either --contributors or --languages."
+        )
+
     from app.services.github import (
         get_authenticated_user,
         get_repo_details,
@@ -105,10 +110,6 @@ def details(
     from app.ui.repo import display_view_header
 
     details = get_repo_details(owner, repo)
-    if contributors and languages:
-        raise typer.BadParameter(
-            "Choose either --contributors or --languages."
-        )
 
     if languages:
         from app.ui.repo import display_languages
