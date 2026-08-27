@@ -7,6 +7,20 @@ from rich.text import Text
 console = Console()
 
 
+def build_view_header(title: str, subtitle: str) -> Panel:
+    """Create the shared header used by focused repository views."""
+    content = Text(justify="center")
+    content.append(title.upper(), style="bold cyan")
+    content.append("\n")
+    content.append(subtitle, style="bold")
+    return Panel(content, width=60, border_style="cyan")
+
+
+def display_view_header(title: str, subtitle: str) -> None:
+    """Render the shared header used by focused repository views."""
+    console.print(build_view_header(title, subtitle))
+
+
 def format_size(size: int | None) -> str:
     # Format GitHub's repository size value for display.
     if size is None:
@@ -38,21 +52,7 @@ def display_repo_details(
     primary_language = details.get("language") or "—"
     url = details.get("html_url") or "—"
 
-    # Repository header
-    header = Text()
-    header.append(full_name, style="bold")
-    header.append("\n")
-    header.append(description, style="dim")
-    header.append("\n\n")
-    header.append(visibility.capitalize(), style="cyan")
-    header.append("    ")
-    header.append(primary_language, style="green")
-
-    header_panel = Panel(
-        header,
-        title="Repository",
-        expand=False,
-    )
+    header_panel = build_view_header("Details", full_name)
 
     # Statistics
     stats = Table(
@@ -139,6 +139,15 @@ def display_repo_details(
     )
 
     console.print(header_panel)
+    console.print(Text(description, style="dim"))
+    console.print(
+        Text.assemble(
+            (visibility.capitalize(), "cyan"),
+            ("    "),
+            (primary_language, "green"),
+        )
+    )
+    console.print()
 
     console.print(
         Columns(
@@ -156,3 +165,90 @@ def display_repo_details(
             style="dim",
         )
     )
+
+
+def display_contributors(
+    full_name: str,
+    contributors: list[dict],
+    total_contributors: int,
+    total_commits: int,
+    current_login: str | None = None,
+    current_contributor: dict | None = None,
+):
+    """Display a focused view of GitHub contributor statistics."""
+    display_view_header("Contributors", full_name)
+
+    shown_count = len(contributors)
+    if not total_contributors:
+        console.print(Text("No contributor data returned.", style="dim"))
+        return
+
+    console.print(Text(
+        f"{total_contributors} contributors returned by GitHub · showing top {shown_count}",
+        style="dim",
+    ))
+
+    current_is_ranked = any(
+        current_login and contributor["login"].casefold() == current_login.casefold()
+        for contributor in contributors
+    )
+    largest_count = max(contributor["commits"] for contributor in contributors)
+
+    if current_contributor and not current_is_ranked:
+        console.print()
+        console.print(Text("YOUR CONTRIBUTION", style="bold cyan"))
+        console.print(Text("─" * 58, style="dim"))
+        console.print(_contributor_row(
+            current_contributor, total_commits, largest_count,
+            marker="● ", highlight=True,
+        ))
+
+    console.print()
+    console.print(Text("TOP CONTRIBUTORS", style="bold"))
+    console.print(Text("─" * 58, style="dim"))
+    for rank, contributor in enumerate(contributors, start=1):
+        is_current_user = bool(
+            current_login and contributor["login"].casefold() == current_login.casefold()
+        )
+        console.print(_contributor_row(
+            contributor, total_commits, largest_count, rank=rank,
+            marker="● " if is_current_user else "  ", highlight=is_current_user,
+        ))
+        if rank < shown_count:
+            console.print()
+
+    console.print(Text("─" * 58, style="dim"))
+    console.print(Text(
+        f"Showing {shown_count} of {total_contributors} contributors returned by GitHub",
+        style="dim",
+    ))
+
+
+def _contributor_row(
+    contributor: dict,
+    total_commits: int,
+    largest_count: int,
+    rank: int | None = None,
+    marker: str = "",
+    highlight: bool = False,
+) -> Text:
+    """Build one compact contributor row with a proportional contribution bar."""
+    commits = int(contributor.get("commits") or 0)
+    percentage = commits / total_commits * 100 if total_commits else 0
+    bar_width = 32
+    filled = max(1, round(commits / largest_count * bar_width)) if commits and largest_count else 0
+    bar = "█" * filled
+    username_style = "bold cyan" if highlight else ""
+    bar_style = "cyan" if highlight else "green"
+    commit_label = "commit" if commits == 1 else "commits"
+
+    row = Text()
+    if rank is not None:
+        row.append(f"{rank:<2} ", style="dim")
+    row.append(marker, style="cyan" if highlight else "dim")
+    row.append(f"{contributor.get('login', 'Unknown'):<30}", style=username_style)
+    row.append(f"{commits:>6} {commit_label}\n")
+    row.append(" " * (4 if rank is not None else 3))
+    row.append(bar.ljust(bar_width), style=bar_style)
+    row.append(f"  {percentage:.1f}%", style="dim")
+    return row
