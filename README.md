@@ -31,11 +31,11 @@ It is powered by [Typer](github.com/fastapi/typer), a library for building fast 
 Since we want you to be able to use Recon from anywhere - not just one directory - we recomend you install it with [uv package manager](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
-  uv tool install recon-gh
+  uv tool install recon-github
 ```
 For the best experience, then login to your GitHub account (this step is not strictly required).
 ```bash
-    recon login
+  recon login
 ```
 ## Usage
 
