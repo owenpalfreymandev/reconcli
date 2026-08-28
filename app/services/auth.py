@@ -15,11 +15,10 @@ DEVICE_CODE_URL = "https://github.com/login/device/code"
 TOKEN_URL = "https://github.com/login/oauth/access_token"
 
 
-if not CLIENT_ID:
-    raise RuntimeError("Missing GITHUB_CLIENT_ID in .env")
-
-
 def login():
+    if not CLIENT_ID:
+        raise RuntimeError("Missing GITHUB_CLIENT_ID in .env")
+
     device = request_device_code()
 
     print("Opening GitHub authentication...")
