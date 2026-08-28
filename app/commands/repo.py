@@ -1,8 +1,11 @@
+from builtins import list as builtins_list
+from typing import cast
+
 import typer
 
 app = typer.Typer()
 
-units = ["KB", "MB", "GB", "TB", "PB" ]
+units = ["KB", "MB", "GB", "TB", "PB"]
 
 
 def format_topics(topics: list[str], max_topics: int = 5) -> str:
@@ -24,18 +27,21 @@ def format_description(description: str, max_chars: int = 90) -> str:
         cutoff = len(description)
 
     shown = description[:cutoff].rstrip()
-    return (f"{shown}...")
+    return f"{shown}..."
+
 
 def format_size(size: int) -> str:
     units = ["KB", "MB", "GB", "TB", "PB"]
 
     current_unit = 0
+    scaled_size: float = size
 
-    while size >= 1000 and current_unit < len(units) - 1:
-        size = size / 1000
+    while scaled_size >= 1000 and current_unit < len(units) - 1:
+        scaled_size = scaled_size / 1000
         current_unit += 1
 
-    return f"{size:.1f} {units[current_unit]}"
+    return f"{scaled_size:.1f} {units[current_unit]}"
+
 
 def format_languages(languages: dict[str, int], max_languages: int = 5) -> list[str]:
     if not languages:
@@ -43,11 +49,7 @@ def format_languages(languages: dict[str, int], max_languages: int = 5) -> list[
 
     total_bytes = sum(languages.values())
 
-    sorted_languages = sorted(
-        languages.items(),
-        key=lambda item: item[1],
-        reverse=True
-    )
+    sorted_languages = sorted(languages.items(), key=lambda item: item[1], reverse=True)
 
     shown = sorted_languages[:max_languages]
     remaining = len(sorted_languages) - len(shown)
@@ -75,10 +77,14 @@ def list():
         typer.echo(f"{repo['full_name']}")
         description = repo.get("description") or "—"
         typer.echo(f"description: {format_description(description)}")
-        typer.echo(f"visibility: {repo.get('visibility') or ('private' if repo.get('private') else 'public')}")
+        typer.echo(
+            f"visibility: {repo.get('visibility') or ('private' if repo.get('private') else 'public')}"
+        )
         typer.echo(f"language: {repo.get('language') or '—'}")
         typer.echo(f"default branch: {repo.get('default_branch') or '—'}")
-        typer.echo(f"stars: {repo.get('stargazers_count', 0)}  forks: {repo.get('forks_count', 0)}  open issues: {repo.get('open_issues_count', 0)}")
+        typer.echo(
+            f"stars: {repo.get('stargazers_count', 0)}  forks: {repo.get('forks_count', 0)}  open issues: {repo.get('open_issues_count', 0)}"
+        )
         typer.echo(f"  url: {repo['html_url']}")
 
         topics = repo.get("topics") or []
@@ -91,34 +97,92 @@ def list():
 @app.command()
 def details(
     owner: str = typer.Argument(..., help="Repository owner, e.g. owenpalfreymandev"),
-    repo: str = typer.Argument(..., help="Repository name, e.g. atlas"),
+    repo: str = typer.Argument(..., help="Repository name, e.g. reconcli"),
+    contributors: bool = typer.Option(False, help="View contributors in more detail."),
+    languages: bool = typer.Option(False, help="View language usage in more detail."),
 ):
     """Gain insights into your repo"""
-    from app.services.github import get_repo_details, get_languages, get_top_contributors
+    if contributors and languages:
+        raise typer.BadParameter("Choose either --contributors or --languages.")
+
+    from app.services.github import (
+        ContributorResults,
+        get_authenticated_user,
+        get_languages,
+        get_repo_details,
+        get_top_contributors,
+    )
+    from app.ui.repo import display_view_header
 
     details = get_repo_details(owner, repo)
-    languages = get_languages(owner, repo)
-    contributions = get_top_contributors(owner, repo, limit=5)
+
+    if languages:
+        from app.ui.repo import display_languages
+
+        display_languages(
+            details.get("full_name", f"{owner}/{repo}"),
+            get_languages(owner, repo),
+        )
+        return
+
+    if contributors:
+        from app.ui.repo import display_contributors
+
+        try:
+            authenticated_user = get_authenticated_user()
+        except RuntimeError:
+            # Contributor statistics remain useful when GitHub cannot identify
+            # the token owner for this request.
+            authenticated_user = {}
+        results = cast(
+            ContributorResults,
+            get_top_contributors(
+                owner,
+                repo,
+                limit=5,
+                current_login=authenticated_user.get("login"),
+                include_metadata=True,
+            ),
+        )
+        display_contributors(
+            details.get("full_name", f"{owner}/{repo}"),
+            results.contributors,
+            results.total_contributors,
+            results.total_commits,
+            authenticated_user.get("login"),
+            results.current_contributor,
+        )
+        return
+
+    language_data = get_languages(owner, repo)
+    contributions = cast(
+        builtins_list[dict[str, str | int | None]],
+        get_top_contributors(owner, repo, limit=5),
+    )
+
+    display_view_header("Details", details.get("full_name", f"{owner}/{repo}"))
 
     # Repo Details
     typer.echo("Repository")
     typer.echo("-----------")
-    typer.echo(f"{details.get('full_name', f'{owner}/{repo}')}") # Name
+    typer.echo(f"{details.get('full_name', f'{owner}/{repo}')}")  # Name
     description = details.get("description") or "—"
-    typer.echo(f"description: {format_description(description)}") # Description
+    typer.echo(f"description: {format_description(description)}")  # Description
     typer.echo(
-        f"visibility: {details.get('visibility') or ('private' if details.get('private') else 'public')}" # Visibility
+        f"visibility: {details.get('visibility') or ('private' if details.get('private') else 'public')}"  # Visibility
     )
-    typer.echo(f"url: {details.get('html_url') or f'https://github.com/{owner}/{repo}'}") # URL
+    typer.echo(
+        f"url: {details.get('html_url') or f'https://github.com/{owner}/{repo}'}"
+    )  # URL
 
     # Stats
     typer.echo("")
     typer.echo("Stats")
     typer.echo("-----------")
-    typer.echo(f"stars: {details.get('stargazers_count') or 0}") # Stars
-    typer.echo(f"forks: {details.get("forks_count")}") # Forks
-    typer.echo(f"issues: {details.get('open_issues_count') or 0}") # Issues
-    typer.echo(f"size: {format_size(details.get('size'))}") # Size
+    typer.echo(f"stars: {details.get('stargazers_count') or 0}")  # Stars
+    typer.echo(f"forks: {details.get('forks_count')}")  # Forks
+    typer.echo(f"issues: {details.get('open_issues_count') or 0}")  # Issues
+    typer.echo(f"size: {format_size(details.get('size'))}")  # Size
 
     typer.echo("")
     typer.echo("Contributions")
@@ -127,14 +191,12 @@ def details(
         typer.echo("No contributor data returned.")
     else:
         for contributor in contributions:
-            typer.echo(
-                f"{contributor['login']}: {contributor['commits']} commits"
-            )
+            typer.echo(f"{contributor['login']}: {contributor['commits']} commits")
 
     # Tech
     typer.echo("")
     typer.echo("Languages")
     typer.echo("---------")
 
-    for language in format_languages(languages):
+    for language in format_languages(language_data):
         typer.echo(language)

@@ -1,13 +1,14 @@
+import time
+from dataclasses import dataclass
 from urllib.parse import quote
 
-import time
 import requests
 
-from app.services.storage import get_token
 from app.services.github_errors import (
     github_headers,
     raise_for_github_error,
 )
+from app.services.storage import get_token
 
 GITHUB_API = "https://api.github.com"
 
@@ -16,13 +17,21 @@ STATS_POLL_ATTEMPTS = 5
 STATS_POLL_INTERVAL_SECONDS = 1
 
 
+@dataclass
+class ContributorResults:
+    """Top contributor rows plus metadata from GitHub's statistics response."""
+
+    contributors: list[dict[str, str | int | None]]
+    total_contributors: int
+    total_commits: int
+    current_contributor: dict[str, str | int | None] | None = None
+
+
 def _get_auth_headers():
     token = get_token()
 
     if not token:
-        raise RuntimeError(
-            "Not authenticated with GitHub. Run `auth login`."
-        )
+        raise RuntimeError("Not authenticated with GitHub. Run `auth login`.")
 
     return github_headers(token)
 
@@ -95,7 +104,9 @@ def get_top_contributors(
     owner: str,
     repo: str,
     limit: int = TOP_CONTRIBUTORS,
-) -> list[dict[str, str | int | None]]:
+    current_login: str | None = None,
+    include_metadata: bool = False,
+) -> list[dict[str, str | int | None]] | ContributorResults:
     """
     Return contributors ranked by commit count.
 
@@ -106,10 +117,7 @@ def get_top_contributors(
     if limit < 1:
         raise ValueError("limit must be at least 1")
 
-    url = (
-        f"{GITHUB_API}/repos/"
-        f"{owner}/{repo}/stats/contributors"
-    )
+    url = f"{GITHUB_API}/repos/{owner}/{repo}/stats/contributors"
 
     for attempt in range(STATS_POLL_ATTEMPTS):
         response = requests.get(
@@ -124,27 +132,53 @@ def get_top_contributors(
                 continue
 
             raise RuntimeError(
-                "GitHub is still computing contributor statistics. "
-                "Try again shortly."
+                "GitHub is still computing contributor statistics. Try again shortly."
             )
 
         raise_for_github_error(response)
 
+        statistics = [
+            contributor
+            for contributor in response.json()
+            if contributor.get("author") is not None
+        ]
         contributors = sorted(
-            response.json(),
+            statistics,
             key=lambda contributor: contributor["total"],
             reverse=True,
-        )[:limit]
+        )
 
-        return [
-            {
-                "login": contributor["author"]["login"],
+        def format_contributor(contributor: dict) -> dict[str, str | int | None]:
+            author = contributor["author"]
+            return {
+                "login": author["login"],
                 "commits": contributor["total"],
-                "profile_url": contributor["author"]["html_url"],
-                "avatar_url": contributor["author"]["avatar_url"],
+                "profile_url": author["html_url"],
+                "avatar_url": author["avatar_url"],
             }
-            for contributor in contributors
-            if contributor["author"] is not None
-        ]
 
-    return []
+        current_contributor = next(
+            (
+                format_contributor(contributor)
+                for contributor in contributors
+                if current_login
+                and contributor["author"]["login"].casefold()
+                == current_login.casefold()
+            ),
+            None,
+        )
+
+        top_contributors = [
+            format_contributor(contributor) for contributor in contributors[:limit]
+        ]
+        if not include_metadata:
+            return top_contributors
+
+        return ContributorResults(
+            contributors=top_contributors,
+            total_contributors=len(contributors),
+            total_commits=sum(contributor["total"] for contributor in contributors),
+            current_contributor=current_contributor,
+        )
+
+    return ContributorResults([], 0, 0) if include_metadata else []
