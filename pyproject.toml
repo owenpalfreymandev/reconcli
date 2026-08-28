@@ -1,5 +1,5 @@
 [project]
-name = "recon-gh"
+name = "recon-github"
 version = "0.1.0"
 description = "Recon is a powerful CLI companion for developers and tools for agents, turning GitHub activity and repository data into useful insights from your terminal"
 readme = "README.md"
