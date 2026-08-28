@@ -20,9 +20,7 @@ def raise_for_github_error(response: Response) -> None:
     except ValueError:
         message = response.text or response.reason
 
-    details = [
-        f"GitHub API returned {response.status_code}: {message}"
-    ]
+    details = [f"GitHub API returned {response.status_code}: {message}"]
 
     request_id = response.headers.get("X-GitHub-Request-Id")
     if request_id:
@@ -36,8 +34,6 @@ def raise_for_github_error(response: Response) -> None:
 
         retry_after = response.headers.get("Retry-After")
         if retry_after:
-            details.append(
-                f"retry after {retry_after} seconds"
-            )
+            details.append(f"retry after {retry_after} seconds")
 
     raise RuntimeError("; ".join(details))
