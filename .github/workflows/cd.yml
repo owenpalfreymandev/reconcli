@@ -12,7 +12,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/project/recon-gh/
+      url: https://pypi.org/project/recon-github/
 
     permissions:
       id-token: write

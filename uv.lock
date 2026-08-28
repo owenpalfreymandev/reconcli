@@ -422,9 +422,9 @@ wheels = [
 ]
 
 [[package]]
-name = "recon-gh"
-version = "0.1.0"
-source = { virtual = "." }
+name = "recon-github"
+version = "0.1.5"
+source = { editable = "." }
 dependencies = [
     { name = "dotenv" },
     { name = "requests" },
