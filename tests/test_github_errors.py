@@ -4,7 +4,9 @@ from requests import Response
 from app.services.github_errors import github_headers, raise_for_github_error
 
 
-def response(status=500, *, ok=None, json_data=None, text="", reason="Server Error", headers=None):
+def response(
+    status=500, *, ok=None, json_data=None, text="", reason="Server Error", headers=None
+):
     result = Response()
     result.status_code = status
     result._content = text.encode()
@@ -14,6 +16,7 @@ def response(status=500, *, ok=None, json_data=None, text="", reason="Server Err
         result._content = b"{}"
     if json_data is not None:
         import json
+
         result._content = json.dumps(json_data).encode()
     return result
 
@@ -32,7 +35,13 @@ def test_success_is_ignored():
 
 def test_json_error_message_and_request_id():
     with pytest.raises(RuntimeError, match="Nope.*request ID: req-1"):
-        raise_for_github_error(response(404, json_data={"message": "Nope"}, headers={"X-GitHub-Request-Id": "req-1"}))
+        raise_for_github_error(
+            response(
+                404,
+                json_data={"message": "Nope"},
+                headers={"X-GitHub-Request-Id": "req-1"},
+            )
+        )
 
 
 def test_non_json_falls_back_to_text_then_reason():
@@ -51,7 +60,13 @@ def test_request_id_is_omitted_when_absent():
 @pytest.mark.parametrize("status", [403, 429])
 def test_rate_limit_details(status):
     with pytest.raises(RuntimeError) as error:
-        raise_for_github_error(response(status, json_data={"message": "rate"}, headers={"X-RateLimit-Remaining": "0", "Retry-After": "3"}))
+        raise_for_github_error(
+            response(
+                status,
+                json_data={"message": "rate"},
+                headers={"X-RateLimit-Remaining": "0", "Retry-After": "3"},
+            )
+        )
     assert "rate limit exhausted" in str(error.value)
     assert "retry after 3 seconds" in str(error.value)
 

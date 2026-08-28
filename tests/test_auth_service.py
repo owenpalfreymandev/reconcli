@@ -12,12 +12,21 @@ def test_login_requires_client_id(monkeypatch):
 
 
 def test_poll_for_token_returns_immediately(monkeypatch):
-    monkeypatch.setattr(auth.requests, "post", Mock(return_value=Mock(json=lambda: {"access_token": "tok"})))
+    monkeypatch.setattr(
+        auth.requests,
+        "post",
+        Mock(return_value=Mock(json=lambda: {"access_token": "tok"})),
+    )
     assert auth.poll_for_token({"device_code": "code"}) == "tok"
 
 
 def test_poll_for_token_retries_pending(monkeypatch):
-    post = Mock(side_effect=[Mock(json=lambda: {"error": "authorization_pending"}), Mock(json=lambda: {"access_token": "tok"})])
+    post = Mock(
+        side_effect=[
+            Mock(json=lambda: {"error": "authorization_pending"}),
+            Mock(json=lambda: {"access_token": "tok"}),
+        ]
+    )
     sleep = Mock()
     monkeypatch.setattr(auth.requests, "post", post)
     monkeypatch.setattr(auth.time, "sleep", sleep)
@@ -26,7 +35,11 @@ def test_poll_for_token_retries_pending(monkeypatch):
 
 
 def test_poll_for_token_other_error_raises(monkeypatch):
-    monkeypatch.setattr(auth.requests, "post", Mock(return_value=Mock(json=lambda: {"error": "expired_token"})))
+    monkeypatch.setattr(
+        auth.requests,
+        "post",
+        Mock(return_value=Mock(json=lambda: {"error": "expired_token"})),
+    )
     with pytest.raises(RuntimeError, match="expired_token"):
         auth.poll_for_token({"device_code": "code"})
 
