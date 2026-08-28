@@ -24,7 +24,7 @@ def format_description(description: str, max_chars: int = 90) -> str:
     # Truncate at or after max_chars, but never in the middle of a word.
     cutoff = description.find(" ", max_chars)
     if cutoff == -1:
-        cutoff = len(description)
+        cutoff = max_chars
 
     shown = description[:cutoff].rstrip()
     return f"{shown}..."
