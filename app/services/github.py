@@ -1,4 +1,5 @@
 import time
+from dataclasses import dataclass
 from urllib.parse import quote
 
 import requests
@@ -14,6 +15,16 @@ GITHUB_API = "https://api.github.com"
 TOP_CONTRIBUTORS = 10
 STATS_POLL_ATTEMPTS = 5
 STATS_POLL_INTERVAL_SECONDS = 1
+
+
+@dataclass
+class ContributorResults:
+    """Top contributor rows plus metadata from GitHub's statistics response."""
+
+    contributors: list[dict[str, str | int | None]]
+    total_contributors: int
+    total_commits: int
+    current_contributor: dict[str, str | int | None] | None = None
 
 
 def _get_auth_headers():
@@ -93,7 +104,9 @@ def get_top_contributors(
     owner: str,
     repo: str,
     limit: int = TOP_CONTRIBUTORS,
-) -> list[dict[str, str | int | None]]:
+    current_login: str | None = None,
+    include_metadata: bool = False,
+) -> list[dict[str, str | int | None]] | ContributorResults:
     """
     Return contributors ranked by commit count.
 
@@ -124,21 +137,48 @@ def get_top_contributors(
 
         raise_for_github_error(response)
 
+        statistics = [
+            contributor
+            for contributor in response.json()
+            if contributor.get("author") is not None
+        ]
         contributors = sorted(
-            response.json(),
+            statistics,
             key=lambda contributor: contributor["total"],
             reverse=True,
-        )[:limit]
+        )
 
-        return [
-            {
-                "login": contributor["author"]["login"],
+        def format_contributor(contributor: dict) -> dict[str, str | int | None]:
+            author = contributor["author"]
+            return {
+                "login": author["login"],
                 "commits": contributor["total"],
-                "profile_url": contributor["author"]["html_url"],
-                "avatar_url": contributor["author"]["avatar_url"],
+                "profile_url": author["html_url"],
+                "avatar_url": author["avatar_url"],
             }
-            for contributor in contributors
-            if contributor["author"] is not None
-        ]
 
-    return []
+        current_contributor = next(
+            (
+                format_contributor(contributor)
+                for contributor in contributors
+                if current_login
+                and contributor["author"]["login"].casefold()
+                == current_login.casefold()
+            ),
+            None,
+        )
+
+        top_contributors = [
+            format_contributor(contributor) for contributor in contributors[:limit]
+        ]
+        if not include_metadata:
+            return top_contributors
+
+        return ContributorResults(
+            contributors=top_contributors,
+            total_contributors=len(contributors),
+            total_commits=sum(contributor["total"] for contributor in contributors),
+            current_contributor=current_contributor,
+        )
+
+    return ContributorResults([], 0, 0) if include_metadata else []
