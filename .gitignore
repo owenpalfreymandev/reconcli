@@ -39,3 +39,6 @@ yarn-error.log*
 recon_gh.egg-info
 .ruff_cache
 .uv-cache
+.pytest-tmp
+.pytest_cache
+.uv-cache-ci

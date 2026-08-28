@@ -24,3 +24,5 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+# Use a project-local temp directory to avoid Windows pytest temp-folder permission issues.
+addopts = "--basetemp=.pytest-tmp"
