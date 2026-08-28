@@ -1,7 +1,7 @@
+from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.columns import Columns
 from rich.text import Text
 
 console = Console()
@@ -201,10 +201,12 @@ def display_contributors(
         console.print(Text("No contributor data returned.", style="dim"))
         return
 
-    console.print(Text(
-        f"{total_contributors} contributors returned by GitHub · showing top {shown_count}",
-        style="dim",
-    ))
+    console.print(
+        Text(
+            f"{total_contributors} contributors returned by GitHub · showing top {shown_count}",
+            style="dim",
+        )
+    )
 
     current_is_ranked = any(
         current_login and contributor["login"].casefold() == current_login.casefold()
@@ -216,30 +218,44 @@ def display_contributors(
         console.print()
         console.print(Text("YOUR CONTRIBUTION", style="bold cyan"))
         console.print(Text("─" * 58, style="dim"))
-        console.print(_contributor_row(
-            current_contributor, total_commits, largest_count,
-            marker="● ", highlight=True,
-        ))
+        console.print(
+            _contributor_row(
+                current_contributor,
+                total_commits,
+                largest_count,
+                marker="● ",
+                highlight=True,
+            )
+        )
 
     console.print()
     console.print(Text("TOP CONTRIBUTORS", style="bold"))
     console.print(Text("─" * 58, style="dim"))
     for rank, contributor in enumerate(contributors, start=1):
         is_current_user = bool(
-            current_login and contributor["login"].casefold() == current_login.casefold()
+            current_login
+            and contributor["login"].casefold() == current_login.casefold()
         )
-        console.print(_contributor_row(
-            contributor, total_commits, largest_count, rank=rank,
-            marker="● " if is_current_user else "  ", highlight=is_current_user,
-        ))
+        console.print(
+            _contributor_row(
+                contributor,
+                total_commits,
+                largest_count,
+                rank=rank,
+                marker="● " if is_current_user else "  ",
+                highlight=is_current_user,
+            )
+        )
         if rank < shown_count:
             console.print()
 
     console.print(Text("─" * 58, style="dim"))
-    console.print(Text(
-        f"Showing {shown_count} of {total_contributors} contributors returned by GitHub",
-        style="dim",
-    ))
+    console.print(
+        Text(
+            f"Showing {shown_count} of {total_contributors} contributors returned by GitHub",
+            style="dim",
+        )
+    )
 
 
 def display_languages(full_name: str, languages: dict[str, int]) -> None:
@@ -259,22 +275,26 @@ def display_languages(full_name: str, languages: dict[str, int]) -> None:
     largest_count = ranked_languages[0][1]
     language_count = len(ranked_languages)
 
-    console.print(Text(
-        f"{language_count} languages returned by GitHub · 100% of reported code",
-        style="dim",
-    ))
+    console.print(
+        Text(
+            f"{language_count} languages returned by GitHub · 100% of reported code",
+            style="dim",
+        )
+    )
     console.print()
     console.print(Text("LANGUAGE BREAKDOWN", style="bold"))
     console.print(Text("─" * 58, style="dim"))
 
     for index, (language, byte_count) in enumerate(ranked_languages, start=1):
-        console.print(_language_row(
-            language,
-            byte_count,
-            total_bytes,
-            largest_count,
-            rank=index,
-        ))
+        console.print(
+            _language_row(
+                language,
+                byte_count,
+                total_bytes,
+                largest_count,
+                rank=index,
+            )
+        )
         if index < language_count:
             console.print()
 
@@ -294,7 +314,11 @@ def _contributor_row(
     commits = int(contributor.get("commits") or 0)
     percentage = commits / total_commits * 100 if total_commits else 0
     bar_width = 32
-    filled = max(1, round(commits / largest_count * bar_width)) if commits and largest_count else 0
+    filled = (
+        max(1, round(commits / largest_count * bar_width))
+        if commits and largest_count
+        else 0
+    )
     bar = "█" * filled
     username_style = "bold cyan" if highlight else ""
     bar_style = "cyan" if highlight else "green"

@@ -1,14 +1,14 @@
-from urllib.parse import quote
-from dataclasses import dataclass
-
 import time
+from dataclasses import dataclass
+from urllib.parse import quote
+
 import requests
 
-from app.services.storage import get_token
 from app.services.github_errors import (
     github_headers,
     raise_for_github_error,
 )
+from app.services.storage import get_token
 
 GITHUB_API = "https://api.github.com"
 
@@ -31,9 +31,7 @@ def _get_auth_headers():
     token = get_token()
 
     if not token:
-        raise RuntimeError(
-            "Not authenticated with GitHub. Run `auth login`."
-        )
+        raise RuntimeError("Not authenticated with GitHub. Run `auth login`.")
 
     return github_headers(token)
 
@@ -119,10 +117,7 @@ def get_top_contributors(
     if limit < 1:
         raise ValueError("limit must be at least 1")
 
-    url = (
-        f"{GITHUB_API}/repos/"
-        f"{owner}/{repo}/stats/contributors"
-    )
+    url = f"{GITHUB_API}/repos/{owner}/{repo}/stats/contributors"
 
     for attempt in range(STATS_POLL_ATTEMPTS):
         response = requests.get(
@@ -137,8 +132,7 @@ def get_top_contributors(
                 continue
 
             raise RuntimeError(
-                "GitHub is still computing contributor statistics. "
-                "Try again shortly."
+                "GitHub is still computing contributor statistics. Try again shortly."
             )
 
         raise_for_github_error(response)
@@ -174,7 +168,9 @@ def get_top_contributors(
             None,
         )
 
-        top_contributors = [format_contributor(contributor) for contributor in contributors[:limit]]
+        top_contributors = [
+            format_contributor(contributor) for contributor in contributors[:limit]
+        ]
         if not include_metadata:
             return top_contributors
 
