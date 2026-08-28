@@ -1,5 +1,5 @@
-from unittest.mock import Mock
 from typing import cast
+from unittest.mock import Mock
 
 import pytest
 
