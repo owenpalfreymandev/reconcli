@@ -31,3 +31,11 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# I don't really know what they are to be honest (does anyone?)
+# maybe someone can sort this one day
+.coverage
+.coverage.xml
+recon_gh.egg-info
+.ruff_cache
+.uv-cache
