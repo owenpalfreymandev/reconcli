@@ -36,7 +36,7 @@ yarn-error.log*
 # maybe someone can sort this one day
 .coverage
 .coverage.xml
-recon_gh.egg-info
+recon_github.egg-info
 .ruff_cache
 .uv-cache
 .pytest-tmp
