@@ -1,8 +1,10 @@
 from unittest.mock import Mock
+from typing import cast
 
 import pytest
 
 from app.services import github
+from app.services.github import ContributorResults
 
 
 def token_headers(monkeypatch):
@@ -77,12 +79,16 @@ def test_top_contributors_filters_sorts_limits_and_finds_current_user(monkeypatc
     monkeypatch.setattr(
         github.requests, "get", Mock(return_value=stats_response(200, data))
     )
-    result = github.get_top_contributors(
-        "o", "r", limit=2, current_login="high", include_metadata=True
+    result = cast(
+        ContributorResults,
+        github.get_top_contributors(
+            "o", "r", limit=2, current_login="high", include_metadata=True
+        ),
     )
     assert [row["login"] for row in result.contributors] == ["HIGH", "Mid"]
     assert result.total_contributors == 3
     assert result.total_commits == 15
+    assert result.current_contributor is not None
     assert result.current_contributor["login"] == "HIGH"
 
 
@@ -112,7 +118,10 @@ def test_top_contributors_plain_list_and_no_current_match(monkeypatch):
         github.requests, "get", Mock(return_value=stats_response(200, data))
     )
     assert isinstance(github.get_top_contributors("o", "r"), list)
-    result = github.get_top_contributors(
-        "o", "r", current_login="other", include_metadata=True
+    result = cast(
+        ContributorResults,
+        github.get_top_contributors(
+            "o", "r", current_login="other", include_metadata=True
+        ),
     )
     assert result.current_contributor is None
