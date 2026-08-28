@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-import app.services.github as github
+from app.services import github
 
 
 def token_headers(monkeypatch):

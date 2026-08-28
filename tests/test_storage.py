@@ -1,4 +1,4 @@
-import app.services.storage as storage
+from app.services import storage
 
 
 def isolate_storage(tmp_path, monkeypatch):

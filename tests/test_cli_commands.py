@@ -5,7 +5,6 @@ from typer.testing import CliRunner
 from app.cli import app
 from app.commands import auth as auth_command
 from app.commands import me as me_command
-from app.commands import repo as repo_command
 
 runner = CliRunner()
 

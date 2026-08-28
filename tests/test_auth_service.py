@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-import app.services.auth as auth
+from app.services import auth
 
 
 def test_login_requires_client_id(monkeypatch):
