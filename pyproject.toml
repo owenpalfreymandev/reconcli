@@ -1,6 +1,6 @@
 [project]
 name = "recon-github"
-version = "0.1.0"
+version = "0.1.3"
 description = "Recon is a powerful CLI companion for developers and tools for agents, turning GitHub activity and repository data into useful insights from your terminal"
 readme = "README.md"
 requires-python = ">=3.12"
