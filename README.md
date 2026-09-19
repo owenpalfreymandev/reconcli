@@ -1,4 +1,3 @@
-
 # Recon CLI
 
 Recon is a powerful CLI companion for developers and tools for agents, turning GitHub activity and repository data into useful insights from your terminal.
@@ -12,9 +11,9 @@ Recon is a powerful CLI companion for developers and tools for agents, turning G
 [![License](https://img.shields.io/github/license/owenpalfreymandev/reconcli)](https://github.com/owenpalfreymandev/reconcli/blob/main/LICENSE)
 ## Overview
 
-Recon allows for developers to view basic GitHub analytics in the terminal quickly, rather than opening up their browser. This means it allows agents to interect with the service without having browser capabilities.
+Recon allows developers to view basic GitHub analytics in the terminal quickly, rather than opening up their browser. This means it allows agents to interact with the service without having browser capabilities.
 
-It is powered by [Typer](github.com/fastapi/typer), a library for building fast CLI tools, and made pretty by [Rich](https://github.com/textualize/rich) and it's prebuilt components.
+It is powered by [Typer](github.com/fastapi/typer), a library for building fast CLI tools, and made pretty by [Rich](https://github.com/textualize/rich) and its prebuilt components.
 ## Features
 
 * **GitHub Authentication** — Securely authenticate with GitHub using OAuth device flow.
@@ -28,7 +27,7 @@ It is powered by [Typer](github.com/fastapi/typer), a library for building fast 
 
 ## Installation
 
-Since we want you to be able to use Recon from anywhere - not just one directory - we recomend you install it with [uv package manager](https://docs.astral.sh/uv/getting-started/installation/).
+Since we want you to be able to use Recon from anywhere - not just one directory - we recommend you install it with [uv package manager](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
   uv tool install recon-github
@@ -55,7 +54,7 @@ Example output:
 ╭────── Owen Palfreyman ───────╮ ╭──────────────────────────────╮
 │ Repositories  2              │ │                              │
 │ Followers     7              │ │                              │
-│ Following     2              │ │                              │
+│ Following     2                │ │                              │
 │ Location      United Kingdom │ │                              │
 │ Company       —              │ │                              │
 │ Joined        2023-11-02     │ │                              │
@@ -200,7 +199,7 @@ uv run pytest
 uv run pyright
 ```
 
-Be sure to lint before commiting, or it will fail CI/CD:
+Be sure to lint before committing, or it will fail CI/CD:
 ```bash
 uv run ruff check --fix .
 ```
@@ -224,4 +223,4 @@ Recon is developed by Owen Palfreyman.
 GitHub: @owenpalfreymandev
 Repository: owenpalfreymandev/reconcli
 
-*or could could just run `recon details owenpalfreymandev reconcli --contributors` wink wink*
+*or could just run `recon details owenpalfreymandev reconcli --contributors` wink wink*
