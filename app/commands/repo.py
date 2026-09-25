@@ -67,31 +67,20 @@ def format_languages(languages: dict[str, int], max_languages: int = 5) -> list[
 
 
 @app.command()
-def list():
+def list(
+    boxy: bool = typer.Option(False, "--boxy", help="Render each repository as a panel (not recommended for long lists)."),
+):
     """See a list of all your repos."""
-    from app.services.github import get_user_repos
+    from app.services.github import get_authenticated_user, get_user_repos
+    from app.ui.repo import display_repository_list
 
+    user = get_authenticated_user()
     repos = get_user_repos()
-
-    for repo in repos:
-        typer.echo(f"{repo['full_name']}")
-        description = repo.get("description") or "—"
-        typer.echo(f"description: {format_description(description)}")
-        typer.echo(
-            f"visibility: {repo.get('visibility') or ('private' if repo.get('private') else 'public')}"
-        )
-        typer.echo(f"language: {repo.get('language') or '—'}")
-        typer.echo(f"default branch: {repo.get('default_branch') or '—'}")
-        typer.echo(
-            f"stars: {repo.get('stargazers_count', 0)}  forks: {repo.get('forks_count', 0)}  open issues: {repo.get('open_issues_count', 0)}"
-        )
-        typer.echo(f"  url: {repo['html_url']}")
-
-        topics = repo.get("topics") or []
-        if topics:
-            typer.echo(f"  topics: {format_topics(topics)}")
-
-        typer.echo("")
+    display_repository_list(
+        repos,
+        user.get("login", "Unknown user"),
+        boxy=boxy,
+    )
 
 
 @app.command()
