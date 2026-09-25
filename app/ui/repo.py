@@ -7,13 +7,143 @@ from rich.text import Text
 console = Console()
 
 
-def build_view_header(title: str, subtitle: str) -> Panel:
+def build_repository_table(repositories: list[dict]) -> Table:
+    """Build the compact repository listing used by ``recon list``."""
+    table_width = _repository_table_width()
+    repository_width = max(13, min(32, table_width - 66))
+    table = Table(
+        title=f"Repositories ({len(repositories)})",
+        title_style="bold cyan",
+        header_style="bold cyan",
+        box=None,
+        show_edge=False,
+        pad_edge=False,
+        padding=(0, 1),
+        collapse_padding=False,
+        width=table_width,
+    )
+    table.add_column(
+        "Repository",
+        no_wrap=True,
+        overflow="ellipsis",
+        width=repository_width,
+        max_width=repository_width,
+    )
+    table.add_column(
+        "Visibility", no_wrap=True, overflow="ellipsis", width=10, max_width=10
+    )
+    table.add_column(
+        "Language", no_wrap=True, overflow="ellipsis", width=9, max_width=9
+    )
+    table.add_column(
+        "Updated", no_wrap=True, overflow="ellipsis", width=10, max_width=10
+    )
+    table.add_column("Branch", no_wrap=True, overflow="ellipsis", width=6, max_width=6)
+    table.add_column("Stars", justify="right", no_wrap=True, width=5)
+    table.add_column("Forks", justify="right", no_wrap=True, width=5)
+    table.add_column("Issues", justify="right", no_wrap=True, width=5)
+
+    for repository in repositories:
+        visibility = repository.get("visibility") or (
+            "private" if repository.get("private") else "public"
+        )
+        table.add_row(
+            str(repository.get("full_name") or repository.get("name") or "—"),
+            str(visibility or "—"),
+            str(repository.get("language") or "—"),
+            _format_updated(repository.get("updated_at")),
+            str(repository.get("default_branch") or "—"),
+            _format_count(repository.get("stargazers_count")),
+            _format_count(repository.get("forks_count")),
+            _format_count(repository.get("open_issues_count")),
+        )
+
+    if not repositories:
+        table.add_row("No repositories found.", *["—"] * 7)
+
+    return table
+
+
+def display_repository_list(
+    repositories: list[dict], username: str, boxy: bool = False
+) -> None:
+    """Render a compact, scan-friendly table of repositories."""
+    width = _repository_box_width() if boxy else _repository_table_width()
+    console.print(build_view_header("List", username, width=width))
+    if boxy:
+        for repository in repositories:
+            console.print(build_repository_panel(repository))
+        if not repositories:
+            console.print(Panel("No repositories found.", width=width))
+        return
+    console.print(build_repository_table(repositories))
+
+
+def build_repository_panel(repository: dict) -> Panel:
+    """Build the box-style repository summary used by ``recon list --boxy``."""
+    from app.commands.repo import format_topics
+
+    visibility = repository.get("visibility") or (
+        "private" if repository.get("private") else "public"
+    )
+    language = repository.get("language") or "—"
+    branch = repository.get("default_branch") or "—"
+    topics = repository.get("topics") or []
+    topic_text = (
+        format_topics([str(topic) for topic in topics]).replace(", ", " · ")
+        if topics
+        else "—"
+    )
+    content = Text()
+    content.append(
+        f"{str(visibility).capitalize()} · {language} · {branch}\n",
+        style="cyan",
+    )
+    content.append(
+        f"Stars {_format_count(repository.get('stargazers_count'))}   "
+        f"Forks {_format_count(repository.get('forks_count'))}   "
+        f"Issues {_format_count(repository.get('open_issues_count'))}\n"
+    )
+    content.append(topic_text, style="dim")
+    return Panel(
+        content,
+        title=str(repository.get("full_name") or repository.get("name") or "—"),
+        width=_repository_box_width(),
+        border_style="cyan",
+    )
+
+
+def _repository_table_width() -> int:
+    """Calculate the shared width for the list table and header."""
+    return min(max(1, console.width - 1), 98)
+
+
+def _repository_box_width() -> int:
+    """Calculate the narrower width used by boxy repository summaries."""
+    return min(max(1, console.width - 1), 72)
+
+
+def _format_count(value: object) -> str:
+    """Format repository counters while keeping missing values predictable."""
+    if value is None:
+        return "0"
+    return f"{value:,}" if isinstance(value, int) else str(value)
+
+
+def _format_updated(value: object) -> str:
+    """Show the date portion of GitHub's ISO timestamp."""
+    if not value:
+        return "—"
+    return str(value).split("T", 1)[0]
+
+
+def build_view_header(title: str, subtitle: str, width: int = 60) -> Panel:
     """Create the shared header used by focused repository views."""
     content = Text(justify="center")
     content.append(title.upper(), style="bold cyan")
     content.append("\n")
     content.append(subtitle, style="bold")
-    return Panel(content, width=60, border_style="cyan")
+    return Panel(content, width=width, border_style="cyan")
 
 
 def display_view_header(title: str, subtitle: str) -> None:
