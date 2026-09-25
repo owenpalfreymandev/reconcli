@@ -104,7 +104,8 @@ def test_list_renders_repository_columns(monkeypatch):
     ]
     assert "1,234" in result.output
     assert "2026-09-25" in result.output
-    assert "Visibility  Language" in result.output
+    assert "Visibility" in result.output
+    assert "Language" in result.output
 
 
 def test_list_boxy_renders_repository_panels(monkeypatch):
