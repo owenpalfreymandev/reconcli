@@ -38,9 +38,7 @@ def build_repository_table(repositories: list[dict]) -> Table:
     table.add_column(
         "Updated", no_wrap=True, overflow="ellipsis", width=10, max_width=10
     )
-    table.add_column(
-        "Branch", no_wrap=True, overflow="ellipsis", width=6, max_width=6
-    )
+    table.add_column("Branch", no_wrap=True, overflow="ellipsis", width=6, max_width=6)
     table.add_column("Stars", justify="right", no_wrap=True, width=5)
     table.add_column("Forks", justify="right", no_wrap=True, width=5)
     table.add_column("Issues", justify="right", no_wrap=True, width=5)

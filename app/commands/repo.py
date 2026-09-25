@@ -68,7 +68,11 @@ def format_languages(languages: dict[str, int], max_languages: int = 5) -> list[
 
 @app.command()
 def list(
-    boxy: bool = typer.Option(False, "--boxy", help="Render each repository as a panel (not recommended for long lists)."),
+    boxy: bool = typer.Option(
+        False,
+        "--boxy",
+        help="Render each repository as a panel (not recommended for long lists).",
+    ),
 ):
     """See a list of all your repos."""
     from app.services.github import get_authenticated_user, get_user_repos

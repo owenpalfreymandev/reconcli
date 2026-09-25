@@ -124,7 +124,14 @@ def test_list_boxy_renders_repository_panels(monkeypatch):
                     "stargazers_count": 0,
                     "forks_count": 0,
                     "open_issues_count": 0,
-                    "topics": ["cli", "developer-tools", "github", "python", "rich-cli", "terminal"],
+                    "topics": [
+                        "cli",
+                        "developer-tools",
+                        "github",
+                        "python",
+                        "rich-cli",
+                        "terminal",
+                    ],
                 }
             ]
         ),
@@ -137,7 +144,10 @@ def test_list_boxy_renders_repository_panels(monkeypatch):
     assert "octo/reconcli" in result.output
     assert "Public · Python · main" in result.output
     assert "Stars 0   Forks 0   Issues 0" in result.output
-    assert "cli · developer-tools · github · python · rich-cli + 1 more..." in result.output
+    assert (
+        "cli · developer-tools · github · python · rich-cli + 1 more..."
+        in result.output
+    )
     assert "Repositories (" not in result.output
     assert result.output.count("─" * 70) >= 2
 
