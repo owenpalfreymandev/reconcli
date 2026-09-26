@@ -160,17 +160,53 @@ def test_details_rejects_both_views():
 
 
 def test_details_default_calls_services_and_prints(monkeypatch):
-    details = {"full_name": "o/r", "description": "desc", "size": 1}
+    details = {
+        "full_name": "o/r",
+        "description": "desc",
+        "visibility": "public",
+        "html_url": "https://github.com/o/r",
+        "stargazers_count": 3,
+        "forks_count": 2,
+        "open_issues_count": 1,
+        "size": 1,
+    }
     monkeypatch.setattr(
         "app.services.github.get_repo_details", Mock(return_value=details)
     )
     monkeypatch.setattr(
-        "app.services.github.get_languages", Mock(return_value={"Python": 1})
+        "app.services.github.get_languages",
+        Mock(
+            return_value={
+                "Python": 6,
+                "Rust": 5,
+                "Go": 4,
+                "JavaScript": 3,
+                "HTML": 2,
+                "CSS": 1,
+            }
+        ),
     )
     monkeypatch.setattr(
-        "app.services.github.get_top_contributors", Mock(return_value=[])
+        "app.services.github.get_top_contributors",
+        Mock(
+            return_value=[
+                {"login": "octo", "commits": 6},
+                {"login": "user2", "commits": 5},
+                {"login": "user3", "commits": 4},
+                {"login": "user4", "commits": 3},
+                {"login": "user5", "commits": 2},
+                {"login": "user6", "commits": 1},
+            ]
+        ),
     )
     result = runner.invoke(app, ["details", "o", "r"])
     assert result.exit_code == 0
+    assert "DETAILS" in result.output
+    assert "Contributors" in result.output
     assert "Repository" in result.output
     assert "Languages" in result.output
+    assert "octo" in result.output
+    assert "user5" in result.output
+    assert "user6" not in result.output
+    assert "CSS" not in result.output
+    assert "Stats" not in result.output
