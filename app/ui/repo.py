@@ -187,7 +187,7 @@ def format_bytes(size: int | None) -> str:
 
 def display_repo_details(
     details: dict,
-    languages: list[str],
+    languages: dict[str, int],
     contributions: list[dict],
 ):
     """Display a repository overview."""
@@ -197,70 +197,51 @@ def display_repo_details(
     visibility = details.get("visibility") or (
         "private" if details.get("private") else "public"
     )
-    primary_language = details.get("language") or "—"
     url = details.get("html_url") or "—"
 
     header_panel = build_view_header("Details", full_name)
-
-    # Statistics
-    stats = Table(
-        show_header=False,
-        box=None,
-        pad_edge=False,
-    )
-
-    stats.add_column("Metric", style="dim")
-    stats.add_column("Value", justify="right")
-
-    stats.add_row(
-        "★ Stars",
-        str(details.get("stargazers_count") or 0),
-    )
-    stats.add_row(
-        "⑂ Forks",
-        str(details.get("forks_count") or 0),
-    )
-    stats.add_row(
-        "! Issues",
-        str(details.get("open_issues_count") or 0),
-    )
-    stats.add_row(
-        "Size",
-        format_size(details.get("size")),
-    )
-
-    stats_panel = Panel(
-        stats,
-        title="Statistics",
-        expand=False,
-    )
 
     # Contributions
     contribution_table = Table(
         show_header=False,
         box=None,
         pad_edge=False,
+        padding=(0, 1),
     )
 
     contribution_table.add_column("Contributor")
     contribution_table.add_column("Commits", justify="right")
+    contribution_table.add_column("Share", justify="right")
 
-    if contributions:
-        for contributor in contributions:
+    ranked_contributions = contributions[:5]
+    if ranked_contributions:
+        total_commits = sum(
+            int(contributor.get("commits") or 0) for contributor in ranked_contributions
+        )
+        for index, contributor in enumerate(ranked_contributions):
+            commits = int(contributor.get("commits") or 0)
+            percentage = commits / total_commits * 100 if total_commits else 0
             contribution_table.add_row(
-                contributor["login"],
-                str(contributor["commits"]),
+                str(contributor.get("login") or "Unknown"),
+                _format_count(commits),
+                _overview_bar_label(
+                    percentage, spaced=index < len(ranked_contributions) - 1
+                ),
             )
     else:
         contribution_table.add_row(
             "No contributor data",
             "—",
+            "",
         )
+    for _ in range(len(ranked_contributions) if ranked_contributions else 1, 5):
+        contribution_table.add_row("", "", "")
 
     contributions_panel = Panel(
         contribution_table,
-        title="Contributions",
+        title="Contributors",
         expand=False,
+        border_style="cyan",
     )
 
     # Languages
@@ -268,51 +249,82 @@ def display_repo_details(
         show_header=False,
         box=None,
         pad_edge=False,
+        expand=True,
+        padding=(0, 1),
     )
 
     language_table.add_column("Language")
-    language_table.add_column("Usage")
+    language_table.add_column("Usage", justify="right")
 
-    for language in languages:
-        language_name, percentage = language.split(": ")
-        language_table.add_row(
-            language_name,
-            percentage,
-        )
+    if not languages:
+        language_table.add_row("No language data returned.", "")
+    else:
+        total_bytes = sum(languages.values())
+        ranked_languages = sorted(
+            languages.items(), key=lambda item: item[1], reverse=True
+        )[:5]
+        for index, (language, byte_count) in enumerate(ranked_languages):
+            percentage = byte_count / total_bytes * 100 if total_bytes else 0
+            language_table.add_row(
+                language,
+                _overview_bar_label(
+                    percentage, spaced=index < len(ranked_languages) - 1
+                ),
+            )
+        for _ in range(min(len(languages), 5), 5):
+            language_table.add_row("", "")
+    if not languages:
+        for _ in range(1, 5):
+            language_table.add_row("", "")
 
     languages_panel = Panel(
         language_table,
         title="Languages",
         expand=False,
+        border_style="cyan",
+    )
+
+    repository = Table(show_header=False, box=None, pad_edge=False, expand=True)
+    repository.add_column("Label", style="dim", no_wrap=True)
+    repository.add_column("Value", overflow="fold")
+    repository.add_row("Description", description)
+    repository.add_row("Visibility", visibility.capitalize())
+    repository.add_row("URL", url)
+    repository.add_row("★ Stars", str(details.get("stargazers_count") or 0))
+    repository.add_row("⑂ Forks", str(details.get("forks_count") or 0))
+    repository.add_row("! Issues", str(details.get("open_issues_count") or 0))
+    repository.add_row("Size", format_size(details.get("size")))
+    repository_panel = Panel(
+        repository,
+        title="Repository",
+        border_style="cyan",
+        width=60,
     )
 
     console.print(header_panel)
-    console.print(Text(description, style="dim"))
+    console.print()
     console.print(
-        Text.assemble(
-            (visibility.capitalize(), "cyan"),
-            ("    "),
-            (primary_language, "green"),
+        Columns(
+            [contributions_panel, languages_panel],
+            expand=False,
+            equal=True,
+            padding=(0, 0),
         )
     )
     console.print()
+    console.print(repository_panel)
 
-    console.print(
-        Columns(
-            [stats_panel, contributions_panel],
-            expand=False,
-            equal=True,
-        )
-    )
 
-    console.print(languages_panel)
+def _progress_bar(percentage: float, width: int = 12) -> str:
+    """Build a compact proportional bar for overview panels."""
+    filled = round(max(0, min(100, percentage)) / 100 * width)
+    return f"[green]{'█' * filled}[/green]"
 
-    console.print(
-        Text(
-            f"↗ {url}",
-            style="dim",
-        )
-    )
+
+def _overview_bar_label(percentage: float, spaced: bool = True) -> str:
+    """Render an overview bar with a compact line of breathing room."""
+    suffix = "\n" if spaced else ""
+    return f"{_progress_bar(percentage)} {percentage:.1f}%{suffix}"
 
 
 def display_contributors(
