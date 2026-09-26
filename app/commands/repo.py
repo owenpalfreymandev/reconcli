@@ -105,7 +105,6 @@ def details(
         get_repo_details,
         get_top_contributors,
     )
-    from app.ui.repo import display_view_header
 
     details = get_repo_details(owner, repo)
 
@@ -153,43 +152,6 @@ def details(
         get_top_contributors(owner, repo, limit=5),
     )
 
-    display_view_header("Details", details.get("full_name", f"{owner}/{repo}"))
+    from app.ui.repo import display_repo_details
 
-    # Repo Details
-    typer.echo("Repository")
-    typer.echo("-----------")
-    typer.echo(f"{details.get('full_name', f'{owner}/{repo}')}")  # Name
-    description = details.get("description") or "—"
-    typer.echo(f"description: {format_description(description)}")  # Description
-    typer.echo(
-        f"visibility: {details.get('visibility') or ('private' if details.get('private') else 'public')}"  # Visibility
-    )
-    typer.echo(
-        f"url: {details.get('html_url') or f'https://github.com/{owner}/{repo}'}"
-    )  # URL
-
-    # Stats
-    typer.echo("")
-    typer.echo("Stats")
-    typer.echo("-----------")
-    typer.echo(f"stars: {details.get('stargazers_count') or 0}")  # Stars
-    typer.echo(f"forks: {details.get('forks_count')}")  # Forks
-    typer.echo(f"issues: {details.get('open_issues_count') or 0}")  # Issues
-    typer.echo(f"size: {format_size(details.get('size'))}")  # Size
-
-    typer.echo("")
-    typer.echo("Contributions")
-    typer.echo("-----------")
-    if not contributions:
-        typer.echo("No contributor data returned.")
-    else:
-        for contributor in contributions:
-            typer.echo(f"{contributor['login']}: {contributor['commits']} commits")
-
-    # Tech
-    typer.echo("")
-    typer.echo("Languages")
-    typer.echo("---------")
-
-    for language in format_languages(language_data):
-        typer.echo(language)
+    display_repo_details(details, language_data, contributions)
