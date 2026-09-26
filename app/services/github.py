@@ -4,11 +4,11 @@ from urllib.parse import quote
 
 import requests
 
+from app.services import gh_cli, storage
 from app.services.github_errors import (
     github_headers,
     raise_for_github_error,
 )
-from app.services.storage import get_token
 
 GITHUB_API = "https://api.github.com"
 
@@ -27,11 +27,33 @@ class ContributorResults:
     current_contributor: dict[str, str | int | None] | None = None
 
 
+NOT_AUTHENTICATED_MESSAGE = (
+    "Not authenticated with GitHub. Run `recon login`, which can reuse a login "
+    "already on this machine, such as the GitHub CLI's."
+)
+
+
+def resolve_token():
+    """
+    Prefer a token saved by `recon login`, then the GitHub CLI login, but only
+    if the user allowed Recon to use it.
+    """
+    token = storage.get_token()
+
+    if token:
+        return token
+
+    if storage.get_credential_source() == gh_cli.SOURCE:
+        return gh_cli.get_token()
+
+    return None
+
+
 def _get_auth_headers():
-    token = get_token()
+    token = resolve_token()
 
     if not token:
-        raise RuntimeError("Not authenticated with GitHub. Run `auth login`.")
+        raise RuntimeError(NOT_AUTHENTICATED_MESSAGE)
 
     return github_headers(token)
 

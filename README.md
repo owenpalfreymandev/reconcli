@@ -36,6 +36,8 @@ For the best experience, then login to your GitHub account (this step is not str
 ```bash
   recon login
 ```
+If you are already logged in to GitHub on this machine, for example with the
+[GitHub CLI](https://cli.github.com), `recon login` offers to reuse that login.
 ## Usage
 
 Here you can learn how to get started with terminal commands, and learn how to find more.
@@ -96,19 +98,60 @@ This provides a quick way to see your repositories before using `details` to exp
 
 ### Authentication
 
-Recon uses GitHub's device flow for authentication.
-
 To log in:
 
 ```bash
 recon login
 ```
 
+Recon first asks whether it may look for a GitHub login that already exists on
+this machine. If you agree, it checks:
+
+* the [GitHub CLI](https://cli.github.com) (`gh auth login`)
+* the `GH_TOKEN` and `GITHUB_TOKEN` environment variables
+* git's credential helper for github.com (macOS Keychain, Git Credential Manager, ...)
+
+For each login it finds, Recon shows the GitHub account it belongs to and asks
+whether that account is yours and should be used. Nothing is used without that
+confirmation, and if you decline everything Recon falls back to its own login.
+
+A GitHub CLI login stays in `gh`: Recon only remembers that you allowed it, and
+reads the token from `gh` when it needs one. A token from an environment
+variable or credential helper is saved to `~/.atlas/config.json`, just like one
+from `recon login --token`.
+
 To log out:
 
 ```bash
 recon logout
 ```
+
+`recon logout` forgets Recon's own token and its permission to use your GitHub
+CLI login. Your `gh` login is not Recon's to revoke, so use `gh auth logout` for
+that.
+
+#### Without an existing login
+
+If there is no login to reuse, `recon login` falls back to GitHub's OAuth device flow.
+Should your build of Recon not ship an OAuth client ID, it says so instead of
+failing with a traceback, and you have two options.
+
+Log in with a [personal access token](https://github.com/settings/tokens):
+
+```bash
+recon login --token <token>
+```
+
+Or point Recon at your own OAuth app (GitHub *Settings > Developer settings >
+OAuth Apps*, with device flow enabled). The client ID is saved to
+`~/.atlas/config.json`, so you only pass it once:
+
+```bash
+recon login --client-id <client id>
+```
+
+The `GITHUB_CLIENT_ID` environment variable is also honoured, and takes priority
+over the saved value.
 
 ### Explore a Repository
 

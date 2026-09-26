@@ -16,7 +16,7 @@ def test_login_logout_delegate(monkeypatch):
     monkeypatch.setattr(auth_command.auth, "logout", logout)
     assert runner.invoke(app, ["login"]).exit_code == 0
     assert runner.invoke(app, ["logout"]).exit_code == 0
-    login.assert_called_once_with()
+    login.assert_called_once_with(client_id=None, token=None)
     logout.assert_called_once_with()
 
 
