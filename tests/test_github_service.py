@@ -8,7 +8,7 @@ from app.services.github import ContributorResults
 
 
 def token_headers(monkeypatch):
-    monkeypatch.setattr(github, "get_token", lambda: "token")
+    monkeypatch.setattr(github.storage, "get_token", lambda: "token")
     return {
         "Authorization": "Bearer token",
         "Accept": "application/vnd.github+json",
@@ -125,3 +125,32 @@ def test_top_contributors_plain_list_and_no_current_match(monkeypatch):
         ),
     )
     assert result.current_contributor is None
+
+
+def test_resolve_token_prefers_stored_token(monkeypatch):
+    monkeypatch.setattr(github.storage, "get_token", lambda: "stored")
+    monkeypatch.setattr(github.storage, "get_credential_source", lambda: "gh_cli")
+    monkeypatch.setattr(github.gh_cli, "get_token", lambda: "from-gh")
+    assert github.resolve_token() == "stored"
+
+
+def test_resolve_token_uses_gh_cli_once_allowed(monkeypatch):
+    monkeypatch.setattr(github.storage, "get_token", lambda: None)
+    monkeypatch.setattr(github.storage, "get_credential_source", lambda: "gh_cli")
+    monkeypatch.setattr(github.gh_cli, "get_token", lambda: "from-gh")
+    assert github.resolve_token() == "from-gh"
+    assert github._get_auth_headers()["Authorization"] == "Bearer from-gh"
+
+
+def test_resolve_token_ignores_gh_cli_without_permission(monkeypatch):
+    monkeypatch.setattr(github.storage, "get_token", lambda: None)
+    monkeypatch.setattr(github.storage, "get_credential_source", lambda: None)
+    monkeypatch.setattr(github.gh_cli, "get_token", lambda: "from-gh")
+    assert github.resolve_token() is None
+
+
+def test_missing_credentials_points_at_login(monkeypatch):
+    monkeypatch.setattr(github.storage, "get_token", lambda: None)
+    monkeypatch.setattr(github.storage, "get_credential_source", lambda: None)
+    with pytest.raises(RuntimeError, match="recon login"):
+        github.get_authenticated_user()
